@@ -1,8 +1,9 @@
 const { status, jsonStatus } = require('../helper/api.responses')
 
 module.exports = (app) => {
- app.use('/api', [
-    require('../models-routes-services/offers/routes')
+  app.use('/api', [
+    require('../models-routes-services/user/routes'),
+    require('../models-routes-services/admin/routes')
   ])
   app.get('/health-check', (req, res) => {
     const sDate = new Date().toJSON()

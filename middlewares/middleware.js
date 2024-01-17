@@ -8,6 +8,7 @@ const ObjectId = mongoose.Types.ObjectId
 const { messages, status, jsonStatus } = require('../helper/api.responses')
 const { validationResult } = require('express-validator')
 const config = require('../config/config')
+const { multerFileUpload } = require('../helper/utilities.services')
 
 const validateAdmin = (sKey, eType) => {
   return async (req, res, next) => {
@@ -57,8 +58,8 @@ const validateAdmin = (sKey, eType) => {
         const hasPermission = aPermissions.find((permission) => {
           return (
             permission.sKey === sKey &&
-              (permission.eType === eType ||
-                (eType === 'R' && permission.eType === 'W'))
+            (permission.eType === eType ||
+              (eType === 'R' && permission.eType === 'W'))
           )
         })
 
@@ -135,8 +136,9 @@ const isUserAuthenticated = async (req, res, next) => {
     let user
     try {
       // user = await UsersModel.findByToken(token)
-      user = jwt.verify(token, config.JWT_SECRET)
+      user = jwt.verify(token, config.JWT_SECRET_USER)
     } catch (err) {
+      console.log(err)
       return res.status(status.Unauthorized).jsonp({
         status: jsonStatus.Unauthorized,
         message: messages[req.userLanguage].err_unauthorized
@@ -150,14 +152,14 @@ const isUserAuthenticated = async (req, res, next) => {
       })
     }
 
-    // 2 means user.eType = 'B'
-    if (user.eType === '2') {
+
+    if (user.eStatus === 'N') {
       return res.status(status.NotFound).jsonp({ status: jsonStatus.NotFound, message: messages[req.userLanguage].user_blocked })
     }
     // await redisClient.hset(`at:${token}`, '_id', user._id.toString())
     // await redisClient.expire(`at:${token}`, 86400)
     req.user = user
-    req.user._id = ObjectId(user._id)
+    req.user._id = new ObjectId(user._id)
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
       return res.status(status.UnprocessableEntity).jsonp({
@@ -167,7 +169,7 @@ const isUserAuthenticated = async (req, res, next) => {
     }
     return next(null, null)
   } catch (error) {
-    if (process.env.NODE_ENV === 'production') Sentry.captureMessage(error)
+    console.log(error)
     return res.status(status.InternalServerError).jsonp({
       status: jsonStatus.InternalServerError,
       message: messages[req.userLanguage].error
@@ -175,8 +177,23 @@ const isUserAuthenticated = async (req, res, next) => {
   }
 }
 
+const uploadImage = multerFileUpload().single('sImage')
+
+const uploadMulterImage = () => {
+  return async (req, res, next) => {
+    uploadImage(req, res, (err) => {
+      if (err) {
+        if (err.message === 'Not a valid File!!') return res.status(status.BadRequest).jsonp({ status: jsonStatus.BadRequest, message: messages[req.userLanguage].valid_file_type })
+        else if (err.message === 'File too large') return res.status(status.BadRequest).jsonp({ status: jsonStatus.BadRequest, message: messages[req.userLanguage].file_size_cannot_greater_than.replace('##', messages[req.userLanguage].oneMB) })
+        else return res.status(status.BadRequest).jsonp({ status: jsonStatus.BadRequest, message: messages[req.userLanguage].cannot_upload_invalid_file })
+      }
+      next()
+    })
+  }
+}
 module.exports = {
   validateAdmin,
   validate,
   isUserAuthenticated,
+  uploadMulterImage
 }

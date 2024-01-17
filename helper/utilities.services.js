@@ -2,6 +2,7 @@
 const { messages, status, jsonStatus } = require('./api.responses')
 const multer = require('multer')
 const fs = require('fs')
+const { imageFormat } = require('../data')
 /**
  * It'll remove all nullish, not defined and blank properties of input object.
  * @param {object}
@@ -37,7 +38,7 @@ const pick = (object, keys) => {
 }
 
 
-function checkValidImageType (sFileName, sContentType) {
+function checkValidImageType(sFileName, sContentType) {
   const extension = sFileName.split('.').pop().toLowerCase()
   const valid = imageFormat.find(format => format.extension === extension && format.type === sContentType)
   return !!valid
@@ -65,9 +66,11 @@ const multerFileUpload = () => {
     }
   })
 
+  // allow file size of 4MB
   const upload = multer({
     storage: multerStorage,
-    fileFilter: multerFilter
+    fileFilter: multerFilter,
+    limits: { fileSize: 4 * 1024 * 1024 }
   })
   return upload
 }
@@ -83,15 +86,39 @@ const createDefaultFolder = (path) => {
 }
 createDefaultFolder('uploads')
 
-const removeImageFromLocal = (req, removeImage) => {
+const removeImageFromLocal = (req) => {
   try {
-    if (removeImage && req.file?.path && req.file.path.split('/').includes('uploads') && fs.existsSync(req.file.path)) {
+    if (req.file?.path && req.file.path.split('/').includes('uploads') && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path)
       return true
     }
   } catch (error) {
     return false
   }
+}
+
+/**
+ * The function checks if a given input contains only alphanumeric characters.
+ * @param input - The input parameter is a string that you want to check if it contains only
+ * alphanumeric characters.
+ * @returns a boolean value. It returns true if the input string contains only alphanumeric characters
+ * (letters and numbers), and false otherwise.
+ */
+const checkAlphanumeric = (input) => {
+  const letters = /^[0-9a-zA-Z]+$/
+  return !!(input.match(letters))
+}
+
+/**
+ * The function `validatePassword` checks if a given password meets certain criteria.
+ * @param pass - The `pass` parameter represents the password that needs to be validated.
+ * @returns The function `validatePassword` returns a boolean value. It returns `true` if the `pass`
+ * parameter matches the specified regular expression pattern, which represents a valid password. It
+ * returns `false` otherwise.
+ */
+const validatePassword = (pass) => {
+  const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{7,15}$/
+  return !!(pass.match(regex))
 }
 
 module.exports = {
@@ -102,4 +129,6 @@ module.exports = {
   handleCatchError,
   pick,
   checkValidImageType,
+  checkAlphanumeric,
+  validatePassword
 }

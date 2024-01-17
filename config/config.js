@@ -1,5 +1,5 @@
 require('dotenv').config()
-console.log("***************RUNNING "+ process.env.NODE_ENV + " ENVIROMENT********")
+console.log("***************RUNNING " + process.env.NODE_ENV + " ENVIRONMENT********")
 
 let environment
 if (process.env.NODE_ENV === 'production') {

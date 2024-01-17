@@ -1,6 +1,8 @@
 module.exports = {
     cmsSlug: 'CMS Slug',
     cms: 'CMS',
+    user: 'User',
+    admin: 'Admin',
     content: 'Content',
     cssType: 'CSS Type',
     cssStyle: 'CSS Style',
@@ -34,6 +36,6 @@ module.exports = {
     eType: 'eType',
     eStatus: 'eStatus',
     ePlace: 'ePlace',
-    ePlatform: 'ePlatform'
+    ePlatform: 'ePlatform',
+    cFile: 'File'
 }
-  
