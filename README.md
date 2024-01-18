@@ -14,6 +14,7 @@ Node must be installed in your system
 Provide step-by-step instructions on how to set up the project locally.
 
 # Example code for installation
-git clone https://github.com/yourusername/your-project.git
-cd your-project
-npm install
+- git clone https://github.com/yourusername/your-project.git
+- cd your-project
+- npm install
+- to start project : npm start
