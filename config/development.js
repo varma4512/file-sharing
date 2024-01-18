@@ -1,6 +1,6 @@
 const dev = {
     PORT: process.env.PORT || 3000,
-    FILE_SHARE_DB_URL: process.env.FILE_SHARE_DB_URL || 'mongodb+srv://kabepe7630:8lBhhgzjKqEbPBrl@file-sharing.6jppkkb.mongodb.net/file-sharing',
+    FILE_SHARE_DB_URL: process.env.FILE_SHARE_DB_URL,
     FILE_SHARE_DB_POOLSIZE: process.env.FILE_SHARE_DB_POOLSIZE || 10,
     NODE_ENV: process.env.NODE_ENV || 'dev',
     REDIS_HOST: process.env.REDIS_HOST || 'localhost',
