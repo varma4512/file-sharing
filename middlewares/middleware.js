@@ -9,6 +9,10 @@ const { messages, status, jsonStatus } = require('../helper/api.responses')
 const { validationResult } = require('express-validator')
 const config = require('../config/config')
 const { multerFileUpload } = require('../helper/utilities.services')
+const AdminModel = require('../models-routes-services/admin/model')
+const RoleModel = require('../models-routes-services/admin/roles/model')
+
+
 
 const validateAdmin = (sKey, eType) => {
   return async (req, res, next) => {
@@ -22,7 +26,7 @@ const validateAdmin = (sKey, eType) => {
       }
       let admin
       try {
-        admin = await findByToken(token)
+        admin = await AdminModel.findByToken(token)
       } catch (err) {
         return res.status(status.Unauthorized).jsonp({
           status: jsonStatus.Unauthorized,
@@ -36,7 +40,6 @@ const validateAdmin = (sKey, eType) => {
         })
       }
       req.admin = admin
-
       let errors
       if (req.admin.eType === 'SUPER') {
         errors = validationResult(req)
@@ -51,7 +54,7 @@ const validateAdmin = (sKey, eType) => {
       } else {
         if (!req.admin.aRole.length) return res.status(status.Unauthorized).jsonp({ status: jsonStatus.Unauthorized, message: messages[req.userLanguage].access_denied })
 
-        const roles = await findRole(req.admin.aRole)
+        const roles = await RoleModel.find({ _id: { $in: req.admin.aRole } }).lean()
         if (!roles.length) return res.status(status.Unauthorized).jsonp({ status: jsonStatus.Unauthorized, message: messages[req.userLanguage].access_denied })
         let aPermissions = roles.map(role => role.aPermissions)
         aPermissions = [].concat.apply([], aPermissions)
@@ -64,34 +67,22 @@ const validateAdmin = (sKey, eType) => {
         })
 
         if (!hasPermission) {
-          let hasSubAdminPermission
-          if (sKey === 'DEPOSIT' && eType === 'W') {
-            hasSubAdminPermission = roles.aPermissions.find((permission) => {
-              return (
-                permission.sKey === 'SYSTEM_USERS' && permission.eType === 'W'
-              )
-            })
+          let message
+          switch (eType) {
+            case 'R':
+              message = messages[req.userLanguage].read_access_denied.replace('##', sKey)
+              break
+            case 'W':
+              message = messages[req.userLanguage].write_access_denied.replace('##', sKey)
+              break
+            case 'N':
+              message = messages[req.userLanguage].access_denied
+              break
           }
-          if (!hasSubAdminPermission) {
-            let message
-
-            switch (eType) {
-              case 'R':
-                message = messages[req.userLanguage].read_access_denied.replace('##', sKey)
-                break
-              case 'W':
-                message = messages[req.userLanguage].write_access_denied.replace('##', sKey)
-                break
-              case 'N':
-                message = messages[req.userLanguage].access_denied
-                break
-            }
-
-            return res.status(status.Unauthorized).jsonp({
-              status: jsonStatus.Unauthorized,
-              message
-            })
-          }
+          return res.status(status.Unauthorized).jsonp({
+            status: jsonStatus.Unauthorized,
+            message
+          })
         }
         errors = validationResult(req)
         if (!errors.isEmpty()) {
@@ -104,7 +95,6 @@ const validateAdmin = (sKey, eType) => {
         return next(null, null)
       }
     } catch (error) {
-      if (process.env.NODE_ENV === 'production') Sentry.captureMessage(error)
       return res.status(status.InternalServerError).jsonp({
         status: jsonStatus.InternalServerError,
         message: messages[req.userLanguage].error
@@ -138,7 +128,6 @@ const isUserAuthenticated = async (req, res, next) => {
       // user = await UsersModel.findByToken(token)
       user = jwt.verify(token, config.JWT_SECRET_USER)
     } catch (err) {
-      console.log(err)
       return res.status(status.Unauthorized).jsonp({
         status: jsonStatus.Unauthorized,
         message: messages[req.userLanguage].err_unauthorized
@@ -169,7 +158,6 @@ const isUserAuthenticated = async (req, res, next) => {
     }
     return next(null, null)
   } catch (error) {
-    console.log(error)
     return res.status(status.InternalServerError).jsonp({
       status: jsonStatus.InternalServerError,
       message: messages[req.userLanguage].error

@@ -12,7 +12,7 @@ const Schema = mongoose.Schema
 // Define the Admin schema
 const Admin = new Schema({
     sEmail: { type: String, trim: true, required: true },
-    eType: { type: String, enum: data.adminType, default:'SUB'},
+    eType: { type: String, enum: data.adminType, default: 'SUB' },
     aRole: [{ type: ObjectId, ref: RoleModel }],
     sPassword: { type: String, trim: true, required: true },
     eStatus: { type: String, enum: data.adminStatus, default: 'Y' },
@@ -31,8 +31,7 @@ Admin.statics.findByToken = async function (token) {
     } catch (e) {
         return Promise.reject(e)
     }
-    const query = { _id: decoded._id, 'aJwtTokens': token, eStatus: 'Y' }
-
+    const query = { _id: decoded._id, eStatus: 'Y' }
     const adminObj = await admin.findOne(query)
     return adminObj
 }

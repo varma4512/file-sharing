@@ -38,49 +38,51 @@ class Admin {
         }
     }
 
-    async list(req,res){
+    async list(req, res) {
         try {
-           let start = 0 
-           let limit = 10
-           let sort = 'dCreatedAt' 
-           const orderBy = order && order === 'asc' ? 1 : -1
-           const sorting = { [sort]: orderBy } 
-           let users = await UserModel.find({ eStatus: 'Y' }).sort(sorting).skip(Number(start)).limit(Number(limit)).lean()
-           return res.status(status.OK).jsonp({ status: jsonStatus.OK, message: messages[req.userLanguage].success.replace('##', messages[req.userLanguage].user), data : users })
+            let start = 0
+            let limit = 10
+            let sort = 'dCreatedAt'
+            let order = req.query.order
+            const orderBy = order && order === 'asc' ? 1 : -1
+            const sorting = { [sort]: orderBy }
+            let users = await UserModel.find({ eStatus: 'Y' }, { sPassword: false, __v: false, dUpdatedAt: false }).sort(sorting).skip(Number(start)).limit(Number(limit)).lean()
+            return res.status(status.OK).jsonp({ status: jsonStatus.OK, message: messages[req.userLanguage].success.replace('##', messages[req.userLanguage].user), data: users })
         } catch (error) {
             return catchError('Admin.list', error, req, res)
         }
     }
 
-    async userFileInfo(req,res){
+    async userFileInfo(req, res) {
         try {
-            let start = 0 
+            let start = 0
             let limit = 10
-            let sort = 'dCreatedAt' 
+            let sort = 'dCreatedAt'
+            let order = req.query.order
             const orderBy = order && order === 'asc' ? 1 : -1
             const sorting = { [sort]: orderBy }
             let userId = req.params.id
-            let usersFileInfo = await FileModel.find({ iUserId : userId },{ sPath:true,sFileName:true,sOriginalName:true }).sort(sorting).skip(Number(start)).limit(Number(limit)).lean()
-            return res.status(status.OK).jsonp({ status: jsonStatus.OK, message: messages[req.userLanguage].success.replace('##', messages[req.userLanguage].userFileInfo), data : usersFileInfo })
+            let usersFileInfo = await FileModel.find({ iUserId: userId }, { sPath: true, sFileName: true, sOriginalName: true }).sort(sorting).skip(Number(start)).limit(Number(limit)).lean()
+            return res.status(status.OK).jsonp({ status: jsonStatus.OK, message: messages[req.userLanguage].success.replace('##', messages[req.userLanguage].userFileInfo), data: usersFileInfo })
         } catch (error) {
-            return catchError('Admin.userFileInfo', error, req, res)   
+            return catchError('Admin.userFileInfo', error, req, res)
         }
     }
 
-    async userFileDownload(req,res){
+    async userFileDownload(req, res) {
         try {
             let fileId = req.params.id
 
             // file record find from collection           
-            let fileInfo = await FileModel.findOne({_id:fileId },{ sPath:true }).lean()
+            let fileInfo = await FileModel.findOne({ _id: fileId }, { sPath: true }).lean()
 
             // check if we have the uploaded file or not
-            if(!fs.existsSync(fileInfo.sPath)) return res.status(status.BadRequest).jsonp({ status: jsonStatus.BadRequest, message: messages[req.userLanguage].not_exist.replace('##', messages[req.userLanguage].cFile)})
+            if (!fs.existsSync(fileInfo.sPath)) return res.status(status.BadRequest).jsonp({ status: jsonStatus.BadRequest, message: messages[req.userLanguage].not_exist.replace('##', messages[req.userLanguage].cFile) })
 
             //send response
             return res.download(fileInfo.sPath)
         } catch (error) {
-            return catchError('Admin.userFileDownload', error, req, res)   
+            return catchError('Admin.userFileDownload', error, req, res)
         }
     }
 }

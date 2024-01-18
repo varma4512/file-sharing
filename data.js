@@ -16,6 +16,7 @@ const enums = {
   adminPermissionType: ['R', 'W', 'N'], // Read (R), Write (W), None (N) - Access Rights
   adminPermission: ['FILE'],
   moduleName: ['FILE-SHARING'],
+  adminLogTypes: ['L', 'FU']
 }
 
 module.exports = enums
