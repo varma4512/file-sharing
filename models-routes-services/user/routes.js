@@ -7,5 +7,9 @@ router.post('/user/registration', validators.userRegistration, validate, userSer
 router.post('/user/login', validators.userLogin, validate, userServices.login)
 router.get('/user/profile', isUserAuthenticated, userServices.profile)
 router.post('/user/file/upload', isUserAuthenticated, uploadMulterImage(), userServices.fileUpload)
+router.get('/user/files', isUserAuthenticated, userServices.userFiles)
+router.post('/user/file/:id', isUserAuthenticated, userServices.userFileDownload)
+
+
 
 module.exports = router

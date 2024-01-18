@@ -8,7 +8,6 @@ const User = new Schema({
     sEmail: { type: String, required: true },
     sPassword: { type: String, required: true },
     eStatus: { type: String, enum: data.status, default: 'N' }, // Y = Active, N = Inactive
-    aJwtTokens: { type: Array },
     sCity: { type: String, required: true }, // required field
     sAddress: { type: String, required: true }, // required field
     nPinCode: { type: Number, required: true }, // required field

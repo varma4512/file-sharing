@@ -4,4 +4,3 @@ module.exports = {
     AWS_REGION: process.env.AWS_REGION || 'ap-south-1',
     PAGINATION_LIMIT: process.env.PAGINATION_LIMIT || 500
 }
-  

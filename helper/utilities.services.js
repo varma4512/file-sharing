@@ -25,7 +25,7 @@ const catchError = (name, error, req, res) => {
 
 const handleCatchError = (error) => {
   if (process.env.NODE_ENV === 'production') Sentry.captureMessage(error)
-  console.log('**********ERROR***********', error)
+  console.trace('**********ERROR***********', error)
 }
 
 const pick = (object, keys) => {
@@ -121,6 +121,12 @@ const validatePassword = (pass) => {
   return !!(pass.match(regex))
 }
 
+
+async function validateEmail (email) {
+  const sRegexEmail = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/
+  return !!(email.match(sRegexEmail))
+}
+
 module.exports = {
   removeImageFromLocal,
   multerFileUpload,
@@ -130,5 +136,6 @@ module.exports = {
   pick,
   checkValidImageType,
   checkAlphanumeric,
-  validatePassword
+  validatePassword,
+  validateEmail
 }

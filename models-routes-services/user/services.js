@@ -1,13 +1,13 @@
 const UserModel = require('./model')
 const FileModel = require('./file/model')
 const { messages, status, jsonStatus } = require('../../helper/api.responses')
-const { catchError, pick, validatePassword } = require('../../helper/utilities.services')
+const { catchError, pick, validatePassword,validateEmail } = require('../../helper/utilities.services')
 const bcrypt = require('bcryptjs')
 const saltRounds = 1 // we can increase decrease salt round as per requirement
 const salt = bcrypt.genSaltSync(saltRounds) // generate slat
 const jwt = require('jsonwebtoken')
 const config = require('../../config/config')
-
+const fs = require('fs')
 class User {
     async registration(req, res) {
         try {
@@ -16,6 +16,10 @@ class User {
 
             // check if user exists or not
             let emailInLowerCase = req.body.sEmail.toLowerCase()
+
+            const isEmail = await validateEmail(emailInLowerCase)
+            if (!isEmail) return res.status(status.BadRequest).jsonp({ status: jsonStatus.BadRequest,message: messages[req.userLanguage].invalid.replace('##',messages[req.userLanguage].email)})
+        
             const userDetails = await UserModel.findOne({ 'sEmail': emailInLowerCase }, { sEmail: true }).lean()
             if (userDetails) return res.status(status.BadRequest).json({ status: jsonStatus.BadRequest, message: messages[req.userLanguage].already_exist.replace('##', messages[req.userLanguage].email) })
 
@@ -33,6 +37,9 @@ class User {
 
             // user registration
             const user = await UserModel.create(req.body)
+            user.__v = undefined
+            user.dUpdatedAt = undefined
+
             return res.status(status.OK).json({ status: jsonStatus.OK, message: messages[req.userLanguage].register_success.replace('##', messages[req.userLanguage].user), data: user })
         } catch (error) {
             return catchError('User.registration', error, req, res)
@@ -52,7 +59,7 @@ class User {
             // find user condition, only active user
             let condition = { 'sEmail': emailInLowerCase, eStatus: 'Y' }
             const userDetails = await UserModel.findOne(condition).lean()
-
+            
             if (!userDetails) return res.status(status.BadRequest).json({ status: jsonStatus.BadRequest, message: messages[req.userLanguage].invalid_username_and_password })
             if (req.body.sPassword && !validatePassword(req.body.sPassword)) return res.status(status.BadRequest).json({ status: jsonStatus.BadRequest, message: messages[req.userLanguage].invalid_username_and_password })
 
@@ -70,7 +77,12 @@ class User {
 
     async profile(req, res) {
         try {
-            const userDetails = await UserModel.findOne({ _id: req.user._id }, { sPassword: false, dUpdatedAt: true, eStatus: true }).lean()
+            const userDetails = await UserModel.findOne({ _id: req.user._id }, { sPassword: false, dUpdatedAt: false }).lean()
+            // remove field
+            userDetails.__v = undefined
+            userDetails.aJwtTokens = undefined
+            userDetails.dCreatedAt = undefined
+
             return res.status(status.OK).json({ status: jsonStatus.OK, message: messages[req.userLanguage].login_success.replace('##', messages[req.userLanguage].user), data: userDetails })
         } catch (error) {
             console.log(error)
@@ -98,6 +110,40 @@ class User {
         } catch (error) {
             removeImageFromLocal(req)
             return catchError('User.registration', error, req, res)
+        }
+    }
+
+     async userFileDownload(req,res){
+        try {
+            let fileId = req.params.id
+
+            // file record find from collection           
+            let fileInfo = await FileModel.findOne({_id:fileId, iUserId:req.user._id },{ sPath:true }).lean()
+
+            // check if we have the uploaded file or not
+            if(!fs.existsSync(fileInfo.sPath)) return res.status(status.BadRequest).jsonp({ status: jsonStatus.BadRequest, message: messages[req.userLanguage].not_exist.replace('##', messages[req.userLanguage].cFile)})
+
+            //send response
+            return res.download(fileInfo.sPath)
+        } catch (error) {
+            return catchError('Admin.userFileDownload', error, req, res)   
+        }
+    }
+
+    async userFiles(req,res){
+        try {
+            let page = req.query.page || 1
+            let limit = 10
+            let skip = (page - 1) * limit
+            console.log(skip)
+            // file record find from collection           
+            let fileInfo = await FileModel.find({ iUserId: req.user._id },{ sMimetype:false, __v:false, dUpdatedAt:false}).sort({dCreatedAt:1}).skip(Number(skip)).limit(Number(limit))
+
+            return res.status(status.OK).json({ status: jsonStatus.OK, message: messages[req.userLanguage].success.replace('##', messages[req.userLanguage].cFile), data: fileInfo })
+            //send response
+            // return res.download(fileInfo.sPath)
+        } catch (error) {
+            return catchError('Admin.userFileDownload', error, req, res)   
         }
     }
 }
